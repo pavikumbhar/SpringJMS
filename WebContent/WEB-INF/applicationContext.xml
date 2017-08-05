@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<!-- was: <?xml version="1.0" encoding="UTF-8"?> -->
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:p="http://www.springframework.org/schema/p"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jee="http://www.springframework.org/schema/jee"
+       xmlns:jms="http://www.springframework.org/schema/jms"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans   http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+                           http://www.springframework.org/schema/mvc  http://www.springframework.org/schema/mvc/spring-mvc.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd
+                           http://www.springframework.org/schema/aop  http://www.springframework.org/schema/aop/spring-aop.xsd
+                           http://www.springframework.org/schema/tx   http://www.springframework.org/schema/tx/spring-tx.xsd
+                           http://www.springframework.org/schema/jee  http://www.springframework.org/schema/jee/spring-jee.xsd
+                           http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms.xsd">
+                          
+  <jms:annotation-driven/>
+  
+  <context:component-scan base-package="com.pavikumbhar.javaheart.spring.jms" />
+  
+    <!-- Glassfish -->
+ <!--  <beans profile="development">
+      <bean id="jndiTemplate" class="org.springframework.jndi.JndiTemplate">
+        <property name="environment">
+            <props>
+                <prop key="java.naming.factory.initial">com.sun.enterprise.naming.SerialInitContextFactory</prop>
+                <prop key="java.naming.factory.url.pkgs">com.sun.enterprise.naming</prop>
+                <prop key="java.naming.factory.state">com.sun.corba.ee.impl.presentation.rmi.JNDIStateFactoryImpl</prop>
+                <prop key="org.omg.CORBA.ORBInitialHost">localhost</prop>
+                <prop key="org.omg.CORBA.ORBInitialPort">3700</prop>
+            </props>
+        </property>
+    </bean>
+  </beans> -->
+  
+
+    
+<!--     weblogic -->
+    <beans profile="production">
+    <bean id="jndiTemplate" class="org.springframework.jndi.JndiTemplate">
+        <property name="environment">
+            <props>
+                <prop key="java.naming.factory.initial">weblogic.jndi.WLInitialContextFactory</prop>
+                <prop key="java.naming.provider.url">t3://localhost:7001</prop>
+<!--                <prop key="java.naming.security.principal">weblogic</prop>
+                <prop key="java.naming.security.credentials">weblogic</prop>-->
+            </props>
+        </property>
+    </bean>
+    </beans>
+    
+    
+<beans profile="production,development">
+         
+    <bean id="connectionFactory" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate" ref="jndiTemplate"/>
+        <property name="jndiName" value="jms/ConnectionFactory"/>
+    </bean>
+
+    <bean id="queueOne" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate" ref="jndiTemplate"/>
+        <property name="jndiName" value="jms/queueOne"/>
+    </bean>
+    
+    
+    <bean id="queueTwo" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate" ref="jndiTemplate"/>
+        <property name="jndiName" value="jms/queueTwo"/>
+    </bean>
+    
+     <bean id="destinationOne" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate" ref="jndiTemplate"/>
+        <property name="jndiName" value="jms/destinationOne"/>
+    </bean>
+    
+     <bean id="destinationTwo" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiTemplate" ref="jndiTemplate"/>
+        <property name="jndiName" value="jms/destinationTwo"/>
+    </bean>
+    
+    
+    <bean id="jmsDestinationResolver" class="org.springframework.jms.support.destination.JndiDestinationResolver">
+        <property name="jndiTemplate" ref="jndiTemplate" />
+        <property name="cache" value="true" />
+    </bean>
+    
+     <bean id="jmsTemplateForQueueOne" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="defaultDestination" ref="destinationOne" />
+        <property name="sessionAcknowledgeModeName" value="CLIENT_ACKNOWLEDGE"/>
+        <property name="destinationResolver" ref="jmsDestinationResolver" />
+        <property name="sessionTransacted" value="true" />
+    </bean>
+    
+      <bean id="jmsTemplateForQueueTwo" class="org.springframework.jms.core.JmsTemplate">
+        <property name="connectionFactory" ref="connectionFactory" />
+        <property name="defaultDestination" ref="destinationTwo" />
+        <property name="sessionAcknowledgeModeName" value="CLIENT_ACKNOWLEDGE"/>
+        <property name="destinationResolver" ref="jmsDestinationResolver" />
+        <property name="sessionTransacted" value="true" />
+    </bean>
+    
+   
+  
+        <!-- Counter for consumer to increment and test to verify count -->
+        <bean id="counter" class="java.util.concurrent.atomic.AtomicInteger" />
+
+  
+      <bean id="listenerContainerOne" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+            <property name="concurrentConsumers" value="1"/>
+            <property name="connectionFactory" ref="connectionFactory"/>
+            <property name="destination" ref="destinationOne"/>
+            <property name="messageListener" ref="jmsMessageListener" />
+            <property name="sessionTransacted" value="true"/>
+        
+        </bean>
+
+
+        <bean id="listenerContainerTwo" class="org.springframework.jms.listener.DefaultMessageListenerContainer">
+            <property name="concurrentConsumers" value="1"/>
+            <property name="connectionFactory" ref="connectionFactory"/>
+            <property name="destination" ref="destinationTwo"/>
+            <property name="messageListener" ref="jmsQueueListener" />
+            <property name="sessionTransacted" value="true"/>
+        
+        </bean>
+  
+    </beans>
+</beans>
